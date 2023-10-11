@@ -1,4 +1,11 @@
 import unittest
+
+import torch.optim
+from torch import nn
+from torchvision import datasets
+from torchvision.transforms import transforms
+
+import utils
 from main import apply_lora_all_params, freeze_non_lora_params, enable_disable_lora_all_params
 from utils import get_device, BigClassifier
 import numpy as np
@@ -41,6 +48,59 @@ class TestLoRALinearLayer(unittest.TestCase):
             else:
                 self.assertFalse(param.requires_grad)
 
+    def test_correct_weights_after_fine_tuning(self):
+        # simulating a pretrained model
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.1307,), (0.3081,))
+        ])
+        mnist_train = datasets.MNIST(root='./data', train=True, download=True, transform=transform)
+        train_dataloader = torch.utils.data.DataLoader(mnist_train, batch_size=16, shuffle=True)
+        mnist_test = datasets.MNIST(root='./data', train=False, download=True, transform=transform)
+
+        cross_entropy = nn.CrossEntropyLoss()
+        optimizer = torch.optim.Adam(self.big_classifier.parameters(), lr = 1e-3)
+        utils.train(self.big_classifier, train_dataloader, optimizer, cross_entropy, 0, self.device)
+
+        original_weights = {}
+        for name, param in self.big_classifier.named_parameters():
+            original_weights[name] = param.clone().detach()
+
+        # applying LoRA
+        apply_lora_all_params(self.big_classifier, self.device)
+        freeze_non_lora_params(self.big_classifier)
+
+        # Fine Tuning
+        mnist_train = datasets.MNIST(root='./data', train=True, download=True, transform=transform)
+        exclude_indices = mnist_train.targets == 7
+        mnist_train.data = mnist_train.data[exclude_indices]
+        mnist_train.targets = mnist_train.targets[exclude_indices]
+
+        train_dataloader = torch.utils.data.DataLoader(mnist_train, batch_size=16, shuffle=True)
+        optimizer = torch.optim.Adam(self.big_classifier.parameters(), lr=1e-3)
+        utils.train(self.big_classifier, train_dataloader, optimizer, cross_entropy, 0, self.device)
+
+        # Assertions
+        for name, param in self.big_classifier.named_parameters():
+            if 'original' in name:
+                name = name.replace('.original', '')
+                name = name.replace('.parametrizations', '')
+                self.assertEqual(torch.all(param - original_weights[name]), 0)
+
+        # enable lora inference
+        enable_disable_lora_all_params(self.big_classifier, True)
+        self.assertTrue(
+            torch.equal(
+                self.big_classifier.sequential[1].weight,
+                self.big_classifier.sequential[1].parametrizations.weight.original + (self.big_classifier.sequential[1].parametrizations.weight[0].lora_B @ self.big_classifier.sequential[1].parametrizations.weight[0].lora_A)
+            )
+        )
+
+        # disable lora inference
+        enable_disable_lora_all_params(self.big_classifier, enabled=False)
+        self.assertTrue(torch.equal(self.big_classifier.sequential[1].weight, original_weights['sequential.1.weight']) )
+        self.assertTrue(torch.equal(self.big_classifier.sequential[3].weight, original_weights['sequential.3.weight']))
+        self.assertTrue(torch.equal(self.big_classifier.sequential[5].weight, original_weights['sequential.5.weight']))
 
 
 if __name__ == '__main__':
