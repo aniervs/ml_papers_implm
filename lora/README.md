@@ -12,7 +12,7 @@ This is with educational purposes.  The final goal is to have a generic library 
 
 The `lora` package has on the `main` module:
 - `LoRAParametrization` module: the matrices $A$ and $B$ such that $\Delta W = BA$
-- 
+ 
   - When `enabled` is to `True`, any inference will use $W + \frac{\alpha}{r}BA$. When set to `False`, any inference will use just `W`. 
 - `linear_layer_parametrization` function: just creates a `LoRAParametrization` object for the corresponding `linear` layer.
 - `apply_lora_single_layer` function: Given a childless layer (as a Pytorch module), it applies LoRA to it.
