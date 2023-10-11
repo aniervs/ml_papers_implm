@@ -27,6 +27,7 @@ class BigClassifier(nn.Module):
 
 
 def train(model, train_loader, optimizer, loss_function, epoch, device):
+    model = model.to(device)
     model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
         data = data.to(device)
