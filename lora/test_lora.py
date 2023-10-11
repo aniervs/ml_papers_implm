@@ -56,7 +56,6 @@ class TestLoRALinearLayer(unittest.TestCase):
         ])
         mnist_train = datasets.MNIST(root='./data', train=True, download=True, transform=transform)
         train_dataloader = torch.utils.data.DataLoader(mnist_train, batch_size=16, shuffle=True)
-        mnist_test = datasets.MNIST(root='./data', train=False, download=True, transform=transform)
 
         cross_entropy = nn.CrossEntropyLoss()
         optimizer = torch.optim.Adam(self.big_classifier.parameters(), lr = 1e-3)
