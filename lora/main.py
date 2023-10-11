@@ -29,8 +29,8 @@ def linear_layer_parametrization(layer, device=torch.device('cpu'), rank=1, alph
 
 
 def conv2d_layer_parametrization(layer, device=torch.device('cpu'), rank=1, alpha=1):
-    out_channel, in_channel, kernel_1, kernel_2 = layer.weight.shape
-    return LoRAParametrization(in_channel * kernel_1, out_channel * kernel_2, rank=rank, alpha=alpha, device=device)
+    out_channel, in_channel, kernel_1, kernel_2 = layer.weight.shape # TODO: test it. Not sure if it should be k1,k2 or k2,k1
+    return LoRAParametrization(in_channel * kernel_1, out_channel * kernel_2, rank=rank, alpha=alpha, device=device) # TODO: check if the rank should be multiplied by the kernel size
 
 
 def apply_lora_single_layer(layer, device=torch.device('cpu'), rank=1, alpha=1):

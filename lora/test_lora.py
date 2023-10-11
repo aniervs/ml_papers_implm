@@ -6,7 +6,7 @@ from torchvision import datasets
 from torchvision.transforms import transforms
 
 import utils
-from main import apply_lora_all_params, freeze_non_lora_params, enable_disable_lora_all_params
+from main import apply_lora_all_params, freeze_non_lora_params, enable_disable_lora_all_params, apply_lora_single_layer
 from utils import get_device, BigClassifier
 import numpy as np
 
@@ -100,6 +100,51 @@ class TestLoRALinearLayer(unittest.TestCase):
         self.assertTrue(torch.equal(self.big_classifier.sequential[1].weight, original_weights['sequential.1.weight']) )
         self.assertTrue(torch.equal(self.big_classifier.sequential[3].weight, original_weights['sequential.3.weight']))
         self.assertTrue(torch.equal(self.big_classifier.sequential[5].weight, original_weights['sequential.5.weight']))
+
+class TestLoRAConv2dLayer(unittest.TestCase):
+    def setUp(self):
+        self.device = get_device()
+
+
+    def test_simple_conv_layer(self):
+        conv_layer = torch.nn.Conv2d(in_channels=3, out_channels=5, kernel_size=(2, 7), device=self.device)
+        # sample_input = torch.rand(size=(3, 32, 32), device=self.device)
+        total_params_non_lora = 0
+        for name, param in conv_layer.named_parameters():
+            total_params_non_lora += np.prod(param.shape)
+
+        expected_total_params_non_lora = 3*5*2*7 + 5
+        expected_total_params_lora = 3*2 + 7*5
+        self.assertEqual(total_params_non_lora, expected_total_params_non_lora)
+
+        apply_lora_all_params(conv_layer, self.device)
+
+        total_params_non_lora = 0
+        total_params_lora = 0
+
+        for name, param in conv_layer.named_parameters():
+            if "lora" in name:
+                total_params_lora += np.prod(param.shape)
+            elif "original" in name or "bias" in name:
+                total_params_non_lora += np.prod(param.shape)
+            else:
+                raise AssertionError("Unexpected type of params")
+
+        self.assertEqual(total_params_non_lora, expected_total_params_non_lora)
+        self.assertEqual(total_params_lora, expected_total_params_lora)
+
+        freeze_non_lora_params(conv_layer)
+
+        for name, param in conv_layer.named_parameters():
+            if "lora" in name:
+                self.assertTrue(param.requires_grad)
+            else:
+                self.assertFalse(param.requires_grad)
+
+    def test_full_cnn_classifier_cifar10(self):
+        # TODO: implement
+        pass
+
 
 
 if __name__ == '__main__':
