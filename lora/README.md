@@ -5,7 +5,7 @@ This is with educational purposes.  The final goal is to have a generic library 
 ### Main goals right now:
 
 - [x] Linear Layer
-- [ ] Conv2D
+- [x] Conv2D
 - [ ] Attention Layer
 
 ### Instructions on how to use
