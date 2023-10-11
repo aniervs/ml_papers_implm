@@ -18,7 +18,7 @@ class LoRAParametrization(nn.Module):
 
     def forward(self, weights):
         if self.enabled:
-            return weights + torch.matmul(self.lora_B, self.lora_A) * self.lora_alpha / self.lora_rank
+            return weights + torch.matmul(self.lora_B, self.lora_A).view(weights.shape) * self.lora_alpha / self.lora_rank
         else:
             return weights
 
@@ -28,14 +28,21 @@ def linear_layer_parametrization(layer, device=torch.device('cpu'), rank=1, alph
     return LoRAParametrization(in_features, out_features, rank=rank, alpha=alpha, device=device)
 
 
+def conv2d_layer_parametrization(layer, device=torch.device('cpu'), rank=1, alpha=1):
+    out_channel, in_channel, kernel_1, kernel_2 = layer.weight.shape
+    return LoRAParametrization(in_channel * kernel_1, out_channel * kernel_2, rank=rank, alpha=alpha, device=device)
+
+
 def apply_lora_single_layer(layer, device=torch.device('cpu'), rank=1, alpha=1):
     name = str(layer)
     if "Linear" in name:
         parametrize.register_parametrization(
             layer, "weight", linear_layer_parametrization(layer, device=device, rank=rank, alpha=alpha)
         )
-    elif "Conv" in name:
-        pass # TODO: figure out the LoRA for Conv1D, Conv2D, Conv3D, ...
+    elif "Conv2d" in name: # TODO; do the same for Conv1D, Conv3D (hint: maybe there's a general implm for all of them)
+        parametrize.register_parametrization(
+            layer, "weight", conv2d_layer_parametrization(layer, device=device, rank=rank, alpha=alpha)
+        )
 
 
 def apply_lora_all_params(module, device=torch.device('cpu'), rank=1, alpha=1):
