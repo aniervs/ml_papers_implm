@@ -27,8 +27,10 @@ from lora.main import apply_lora_all_params, freeze_non_lora_params
 apply_lora_all_params(your_model, device)
 freeze_non_lora_params(your_model)
 ```
+
 and fine-tune it as you would usually do.
 *Yes, just three lines!*
+
 ---
 
 To do inference on the weights of the original model, just use:
