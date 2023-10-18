@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 
+
 def get_device():
     if torch.cuda.is_available():
         return torch.device("cuda:0")
@@ -20,6 +21,26 @@ class BigClassifier(nn.Module):
             nn.Linear(256, 64),
             nn.ReLU(),
             nn.Linear(64, no_classes),
+        )
+
+    def forward(self, img):
+        return self.sequential(img)
+
+
+class CNNClassifier(nn.Module):
+    def __init__(self, in_channels, no_classes):
+        super().__init__()
+        self.sequential = nn.Sequential(
+            nn.Conv2d(in_channels, 16, kernel_size=(3,3)),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=3),
+            nn.Conv2d(16, 32, kernel_size=(3,3)),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=3),
+            nn.Flatten(),
+            nn.Linear(in_features=32*2*2, out_features=16), # assuming input tensors are 28x28
+            nn.ReLU(),
+            nn.Linear(in_features=16, out_features=no_classes)
         )
 
     def forward(self, img):
@@ -47,6 +68,7 @@ def test(model, test_loader, loss_function, device):
     model.eval()
     test_loss = 0
     correct = 0
+
     with torch.no_grad():
         for data, target in test_loader:
             data = data.to(device)
