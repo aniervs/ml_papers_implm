@@ -1,3 +1,5 @@
+# PAPER: https://www.dbs.ifi.lmu.de/Publikationen/Papers/KDD-96.final.frame.pdf
+
 cluster_id = [None] # tells for each point, its cluster_id
 points = [None] # array of points
 eps = 1e-3 # change this
