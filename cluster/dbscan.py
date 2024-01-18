@@ -4,7 +4,7 @@ eps = 1e-3 # change this
 min_pts = 1 # change this
 
 def distance(a, b):
-    # euclidean (done with Brute Force now, but will change later to R*-trees)
+    # euclidean
     result = 0
     k = len(a)
     for i in range(k):
@@ -17,6 +17,9 @@ def region_query(p):
     eps: threshold on the neighborhood distance
     
     return: list of ids of points at distance < eps from p
+    
+    (done with Brute Force now)
+    # TODO: change later to R*-trees
     """
     result_ids = []
     n = len(points)
